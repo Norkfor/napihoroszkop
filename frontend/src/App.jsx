@@ -1,14 +1,7 @@
-import Navbar from "./components/Navbar";
+import LandingPage from "./components/landingPage/LandingPage";
 
 function App() {
-  return (
-    <>
-      <Navbar />
-      <main>
-        <h1>Welcome to the Horoscope App</h1>
-      </main>
-    </>
-  );
+  return <LandingPage />;
 }
 
 export default App;

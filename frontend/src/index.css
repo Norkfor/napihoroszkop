@@ -4,7 +4,7 @@
   --primary-color: #3a0ca3;
   --secondary-color: #b0adff;
   --text-color: #141414;
-  --text-color-light: #2b2b2b;
+  --text-color-light: #333333c7;
   --background-color: #eee5e9;
   --font-family: "Lexend", sans-serif;
 }
@@ -27,5 +27,5 @@ html {
 }
 
 body {
-  background-color: #eb2f64;
+  background-color: var(--background-color);
 }

@@ -1,5 +1,5 @@
 import "./Navbar.css";
-import logo from "../assets/horoscope.png";
+import logo from "../../assets/horoscope.png";
 
 export default function Navbar() {
   return (

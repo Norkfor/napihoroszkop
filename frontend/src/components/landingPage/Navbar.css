@@ -1,10 +1,14 @@
 .navbar {
-  background-color: var(--background-color);
+  background-color: #f9f9f9;
   color: var(--text-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .nav-links {
