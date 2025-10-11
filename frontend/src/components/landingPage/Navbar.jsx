@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "./Navbar.css";
 import logo from "../../assets/horoscope.png";
 
@@ -10,12 +11,12 @@ export default function Navbar() {
       </div>
       <ul className="nav-links">
         <li>
-          <a href="#home">Főoldal</a>
+          <Link to="/">Főoldal</Link>
         </li>
       </ul>
-      <a className="nav-button" href="#">
-        Próbáld ki az alkalmazást
-      </a>
+      <Link className="nav-button" to="/app">
+        Alkalmazás
+      </Link>
     </nav>
   );
 }
