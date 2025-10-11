@@ -1,0 +1,34 @@
+.section-why {
+  padding: 4rem 2rem;
+  background-color: #f9f9f9;
+  text-align: center;
+  padding-bottom: 5rem;
+}
+
+.heading-tertiary {
+  font-size: 1.6rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.heading-secondary {
+  font-size: 2.8rem;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
+.heading-text {
+  font-size: 1.4rem;
+  color: var(--text-color-light);
+  max-width: 600px;
+  margin: 0 auto 3rem auto;
+}
+
+.cards-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
