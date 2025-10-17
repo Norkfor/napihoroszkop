@@ -1,0 +1,105 @@
+.container {
+  display: flex;
+  flex-direction: column; /* ← ide */
+  justify-content: center;
+  align-items: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(180deg, #f8f7fc 0%, #ffffff 100%);
+  min-height: 100vh;
+}
+.section-horoscope {
+  max-width: 70rem;
+  text-align: center;
+}
+
+.horoscope-title {
+  font-size: 2.6rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.horoscope-subtitle {
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 3rem;
+}
+
+.horoscope-form {
+  margin-bottom: 2rem;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2d0b5b;
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.input-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f2f0fa;
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
+}
+
+.horoscope-input {
+  width: 60px;
+  text-align: center;
+  font-size: 1.6rem;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: #2d0b5b;
+}
+
+.date-separator {
+  font-size: 1.8rem;
+  color: #2d0b5b;
+}
+
+.horoscope-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.6rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.horoscope-button:hover {
+  background-color: var(--secondary-color);
+}
+
+.horoscope-quote {
+  margin-top: 2rem;
+  background: #f2e9f7;
+  border-radius: 10px;
+  padding: 1.5rem;
+  font-size: 1.6rem;
+  color: #3d1769;
+  font-style: italic;
+}
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.error-text {
+  color: #e63946;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.input-error {
+  border: 2px solid #e63946;
+  background-color: #fff5f5;
+}
