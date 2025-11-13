@@ -31,34 +31,49 @@
 
 .input-label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   color: #2d0b5b;
   font-weight: 600;
   font-size: 1.4rem;
+  text-align: left;
 }
 
 .input-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  background: #f2f0fa;
+  gap: 1rem;
+  background: white;
+  border: 2px solid #e0dce8;
   border-radius: 10px;
-  padding: 0.8rem 1.2rem;
+  padding: 1rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(125, 71, 214, 0.1);
 }
 
 .horoscope-input {
-  width: 60px;
+  width: 70px;
   text-align: center;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  font-weight: 600;
   border: none;
   background: transparent;
   outline: none;
   color: #2d0b5b;
 }
 
+.horoscope-input::placeholder {
+  color: #b8b0c8;
+  font-weight: 400;
+}
+
 .date-separator {
-  font-size: 1.8rem;
-  color: #2d0b5b;
+  font-size: 2rem;
+  color: #7d47d6;
+  font-weight: 600;
 }
 
 .horoscope-button {
@@ -87,19 +102,42 @@
 }
 
 .input-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-wrapper input[type="text"],
+input[type="email"] {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.6rem;
+  border: 2px solid #e0dce8;
+  border-radius: 10px;
+  background: white;
+  color: #2d0b5b;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input[type="text"]:focus,
+input[type="email"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(125, 71, 214, 0.1);
 }
 
 .error-text {
   color: #e63946;
-  font-size: 0.9rem;
-  margin-bottom: 0.3rem;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
   text-align: center;
+  font-weight: 500;
 }
 
 .input-error {
-  border: 2px solid #e63946;
-  background-color: #fff5f5;
+  border-color: #e63946 !important;
+  background-color: #fff5f5 !important;
+}
+
+.input-wrapper input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
 }
