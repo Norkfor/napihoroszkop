@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtuális környezet
+venv/
+env/
+ENV/
+.venv/
+.python_env/
+
+# IDE / editor
+.vscode/
+.idea/
+.DS_Store
+
+# Logok
+logs/
+*.log
+
+# Környezeti fájlok
+.env
+.env.*
+
+# Adatbázis (ne kerüljön image-be)
+*.db
+*.sqlite
+*.sqlite3
+horoscope.db
+
+# Egyéb
+*.pid

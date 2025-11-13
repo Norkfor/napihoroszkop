@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: horoscope-backend
+    ports:
+      - "6200:6100"
+    volumes:
+      - /volume2/docker/projektlabor/horoscope_db:/app/data
+    environment:
+      - TZ=Europe/Budapest
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    networks:
+      - horoscope-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: horoscope-frontend
+    ports:
+      - "2000:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - horoscope-network
+
+networks:
+  horoscope-network:
+    driver: bridge
