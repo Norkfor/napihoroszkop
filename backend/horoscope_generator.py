@@ -165,19 +165,41 @@ EMLÉKEZTETŐ: AZONNAL a HTML kóddal kezdj! Nincs előtte semmi! A dizájn legy
         temperature=0.95,
     )
     
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=config
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=config
+        )
+        
+        if not response or not response.text:
+            raise ValueError("Üres válasz az AI-től")
+        
+        html_output = response.text.strip()
+        
+        if hasattr(response.candidates[0], 'grounding_metadata') and response.candidates[0].grounding_metadata:
+            print(f"🔍 Google Search használva: {zodiac_sign}")
+        
+        print(f"👤 Név: {name}")
+        print(f"✅ Keresztnév: {first_name}")
+        
+        return html_output
     
-    html_output = response.text.strip()
-    
-    if hasattr(response.candidates[0], 'grounding_metadata') and response.candidates[0].grounding_metadata:
-        print(f"🔍 Google Search használva: {zodiac_sign}")
-    
-    print(f"👤 Név: {name}")
-    print(f"✅ Keresztnév: {first_name}")
-    
-    return html_output
+    except Exception as e:
+        print(f"❌ Hiba a horoszkóp generálásában: {str(e)}")
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Horoszkóp - {zodiac_sign}</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h1>{zodiac_sign} - Mai Horoszkóp</h1>
+            <p>Kedves {name},</p>
+            <p>Sajnos az AI-val technikai hiba lépett fel. Kérlek próbáld meg később újra!</p>
+            <p style="font-size: 12px; opacity: 0.7;">Hiba: {str(e)[:100]}</p>
+        </body>
+        </html>
+        """
 

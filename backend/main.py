@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationInfo
 from sqlalchemy.orm import Session
@@ -46,11 +47,48 @@ class HoroscopeRequest(BaseModel):
             raise ValueError(f'Day {day} is invalid for month {birth_month}')
         
         return day
+
+class HoroscopeRequestNoEmail(BaseModel):
+    name: str
+    birth_month: int = Field(..., ge=1, le=12, description="Birth month (1-12)")
+    birth_day: int = Field(..., ge=1, le=31, description="Birth day (1-31)")
+    
+    @field_validator('birth_day')
+    @classmethod
+    def validate_day_in_month(cls, day: int, info: ValidationInfo) -> int:
+
+        if 'birth_month' not in info.data:
+            return day
+        
+        birth_month = info.data['birth_month']
+        
+        days_in_month = {
+            1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30,
+            7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+        }
+        
+        if day > days_in_month.get(birth_month, 31):
+            raise ValueError(f'Day {day} is invalid for month {birth_month}')
+        
+        return day
     
     
 @app.get("/")
 def root():
     return {"message": "API is working! Scheduler active."}
+
+@app.post("/api/get-horoscope", response_class=HTMLResponse)
+def get_horoscope(request: HoroscopeRequestNoEmail):
+    try:
+        zodiac_sign = get_zodiac_sign(request.birth_month, request.birth_day)
+        
+        horoscope_html = generate_horoscope(zodiac_sign, request.name)
+        return horoscope_html
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 @app.post("/api/send-horoscope")
@@ -103,7 +141,6 @@ class SendHoroscopeByEmailRequest(BaseModel):
 
 @app.post("/api/send-horoscope-by-email")
 def send_horoscope_by_email(request: SendHoroscopeByEmailRequest, db: Session = Depends(get_db)):
-    """Send horoscope to an existing user by email"""
     try:
         user = db.query(User).filter(User.email == request.email).first()
         
