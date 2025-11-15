@@ -11,7 +11,7 @@ export default function Hero() {
           kézbesített horoszkóp-idézetekkel. Szerezz bepillantást a napodba, a
           kapcsolataidba és a személyes fejlődésedbe
         </p>
-        <a className="hero-button" href="#app">
+        <a className="hero-button" href="app">
           Próbáld ki most
         </a>
       </div>

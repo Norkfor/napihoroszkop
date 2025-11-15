@@ -13,7 +13,7 @@ export default function CallToAction() {
           tartogat számodra a jövő!
         </p>
       </div>
-      <a className="cta-button" href="#app">
+      <a className="cta-button" href="app">
         Indítsd el az alkalmazást &#8594;
       </a>
     </section>
