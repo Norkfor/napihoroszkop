@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./HoroscopeGenerator.css";
 import EmailForm from "./EmailForm";
 
 const HoroscopeGenerator = () => {
   const [name, setName] = useState("");
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState(""); // kept as '' or number
   const [day, setDay] = useState("");
   const [errors, setErrors] = useState({});
   const [quote, setQuote] = useState("");
@@ -15,15 +15,30 @@ const HoroscopeGenerator = () => {
   const validate = () => {
     const newErrors = {};
     if (!name.trim()) newErrors.name = "Adj meg egy nevet!";
-    if (!month) newErrors.month = "Add meg a hónapot!";
-    else if (month < 1 || month > 12)
+    const m = Number(month);
+    if (!month && month !== 0) newErrors.month = "Add meg a hónapot!";
+    else if (Number.isNaN(m) || m < 1 || m > 12)
       newErrors.month = "A hónap 1 és 12 között lehet.";
-    if (!day) newErrors.day = "Add meg a napot!";
-    else if (day < 1 || day > 31) newErrors.day = "A nap 1 és 31 között lehet.";
+
+    const d = Number(day);
+    if (!day && day !== 0) newErrors.day = "Add meg a napot!";
+    else if (Number.isNaN(d) || d < 1 || d > 31)
+      newErrors.day = "A nap 1 és 31 között lehet.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Abort and mounted guard
+  const abortRef = useRef(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, []);
 
   const handleGenerate = async () => {
     if (!validate()) {
@@ -37,34 +52,40 @@ const HoroscopeGenerator = () => {
     setShowQuote(false);
 
     try {
-      const res = await fetch("http://localhost:6100/api/send-horoscope", {
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const res = await fetch("http://localhost:6100/api/get-horoscope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          email: "teszt@email.com", // ide az email inputból jöhet
-          birth_month: parseInt(month),
-          birth_day: parseInt(day),
+          birth_month: Number(month),
+          birth_day: Number(day),
         }),
+        signal: controller.signal,
       });
+
+      if (!mountedRef.current) return;
 
       const data = await res.json();
 
       if (res.ok) {
-        // API sikeres válasz
         setQuote(data.message || "Horoszkópod itt jelenik meg!");
         setShowQuote(true);
       } else {
-        // API hibás válasz
         setQuote(data.detail || "Hiba történt az API híváskor.");
         setShowQuote(true);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      console.error(error);
+      if (!mountedRef.current) return;
       setQuote("Hálózati hiba, próbáld újra.");
       setShowQuote(true);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
+      abortRef.current = null;
     }
   };
 
@@ -130,13 +151,16 @@ const HoroscopeGenerator = () => {
             handleGenerate();
           }}
           disabled={loading}
+          aria-busy={loading}
         >
           {loading ? "Betöltés..." : "Mutasd a horoszkópom ✨"}
         </button>
 
         {showQuote && (
           <div className="horoscope-quote">
-            <span>{quote}</span>
+            <span role="status" aria-live="polite">
+              {quote}
+            </span>
           </div>
         )}
       </section>
