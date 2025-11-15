@@ -10,6 +10,7 @@ const HoroscopeGenerator = () => {
   const [quote, setQuote] = useState("");
   const [showQuote, setShowQuote] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -124,7 +125,10 @@ const HoroscopeGenerator = () => {
 
         <button
           className="horoscope-button"
-          onClick={handleGenerate}
+          onClick={() => {
+            setShowEmail(true);
+            handleGenerate();
+          }}
           disabled={loading}
         >
           {loading ? "Betöltés..." : "Mutasd a horoszkópom ✨"}
@@ -137,16 +141,18 @@ const HoroscopeGenerator = () => {
         )}
       </section>
 
-      <section className="section-email">
-        <h2 className="email-title">
-          Fedezd fel minden nap a horoszkópod üzenetét!
-        </h2>
-        <p className="email-subtitle">
-          Iratkozz fel hírlevelünkre, és minden reggel egy személyre szabott,
-          inspiráló horoszkóp üzenet vár rád.
-        </p>
-        <EmailForm />
-      </section>
+      {showEmail && (
+        <section className="section-email">
+          <h2 className="email-title">
+            Fedezd fel minden nap a horoszkópod üzenetét!
+          </h2>
+          <p className="email-subtitle">
+            Iratkozz fel hírlevelünkre, és minden reggel egy személyre szabott,
+            inspiráló horoszkóp üzenet vár rád.
+          </p>
+          <EmailForm name={name} month={month} day={day} />
+        </section>
+      )}
     </div>
   );
 };
