@@ -73,7 +73,6 @@ SZABÁLYOK:
 """
     
     client = genai.Client(api_key=api_key)
-    grounding_tool = types.Tool(google_search=types.GoogleSearch())
     
     prompt = f"""
 Készíts egy lenyűgöző, 2025-ös trendeknek megfelelő, Gmail- és iPhone-kompatibilis HTML horoszkópot {name} ({zodiac_sign}) számára a mai napra: {current_date} ({day_of_week_hu}).
@@ -161,7 +160,6 @@ EMLÉKEZTETŐ: AZONNAL a HTML kóddal kezdj! Nincs előtte semmi! A dizájn legy
 
     config = types.GenerateContentConfig(
         system_instruction=system_instruction,
-        tools=[grounding_tool],
         temperature=0.95,
     )
     
@@ -171,20 +169,63 @@ EMLÉKEZTETŐ: AZONNAL a HTML kóddal kezdj! Nincs előtte semmi! A dizájn legy
             contents=prompt,
             config=config
         )
-        
-        if not response or not response.text:
-            raise ValueError("Üres válasz az AI-től")
-        
-        html_output = response.text.strip()
-        
-        if hasattr(response.candidates[0], 'grounding_metadata') and response.candidates[0].grounding_metadata:
-            print(f"🔍 Google Search használva: {zodiac_sign}")
-        
+
+        if not response:
+            raise ValueError("Nincs válasz az AI-tól")
+
+        html_output = ""
+        if getattr(response, "text", None):
+            html_output = response.text.strip()
+
+        if not html_output and getattr(response, "candidates", None):
+            cand0 = response.candidates[0]
+            content = getattr(cand0, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if parts:
+                html_output = "".join(
+                    (getattr(p, "text", "") or "") for p in parts
+                ).strip()
+
+        if not html_output:
+            raise ValueError("Üres válasz az AI-tól (sem text, sem parts)")
+
+        # 🔧 TISZTÍTÁS: tool_code + minden, ami a HTML előtt van
+        def cleanup_html(raw: str) -> str:
+            if not raw:
+                return raw
+
+            raw = raw.strip()
+
+            # esetleges ```html / ``` levágása
+            for fence in ("```html", "```"):
+                if raw.startswith(fence):
+                    raw = raw[len(fence):].lstrip()
+                if raw.endswith(fence):
+                    raw = raw[:-len(fence)].rstrip()
+
+            # ha van tool_code vagy bármi a HTML előtt, vágjunk a <!DOCTYPE/html-ig
+            doc_start = raw.find("<!DOCTYPE html")
+            if doc_start == -1:
+                doc_start = raw.find("<html")
+            if doc_start > 0:
+                raw = raw[doc_start:]
+
+            # biztonságból szedjük ki az önálló tool_code sorokat is
+            lines = raw.splitlines()
+            lines = [
+                line for line in lines
+                if not line.strip().startswith("tool_code ")
+            ]
+            return "\n".join(lines).strip()
+
+        html_output = cleanup_html(html_output)
+
         print(f"👤 Név: {name}")
         print(f"✅ Keresztnév: {first_name}")
-        
+
         return html_output
-    
+
+
     except Exception as e:
         print(f"❌ Hiba a horoszkóp generálásában: {str(e)}")
         return f"""
@@ -194,12 +235,13 @@ EMLÉKEZTETŐ: AZONNAL a HTML kóddal kezdj! Nincs előtte semmi! A dizájn legy
             <meta charset="UTF-8">
             <title>Horoszkóp - {zodiac_sign}</title>
         </head>
-        <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <h1>{zodiac_sign} - Mai Horoszkóp</h1>
-            <p>Kedves {name},</p>
-            <p>Sajnos az AI-val technikai hiba lépett fel. Kérlek próbáld meg később újra!</p>
-            <p style="font-size: 12px; opacity: 0.7;">Hiba: {str(e)[:100]}</p>
+        <body style="font-family: Arial, sans-serif; text-align:center; margin: 0; padding: 0;">
+            <div style="padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h1>{zodiac_sign} - Mai Horoszkóp</h1>
+                <p>Kedves {name},</p>
+                <p>Sajnos az AI-val technikai hiba lépett fel. Kérlek próbáld meg később újra!</p>
+                <p style="font-size: 12px; opacity: 0.7;">Hiba: {str(e)[:100]}</p>
+            </div>
         </body>
         </html>
         """
-

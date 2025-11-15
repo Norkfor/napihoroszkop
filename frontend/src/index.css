@@ -9,6 +9,16 @@
   --font-family: "Lexend", sans-serif;
 }
 
+.unsubscribe-banner {
+  background: linear-gradient(90deg, #1d4ed8, #6366f1);
+  color: #f9fafb;
+  text-align: center;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+
 * {
   margin: 0;
   padding: 0;

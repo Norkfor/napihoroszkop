@@ -10,6 +10,8 @@ from zodiac_calculator import get_zodiac_sign
 from database import init_db, get_db, User
 from scheduler import start_scheduler
 import time
+import secrets
+
 
 app = FastAPI(title="Zodiac_API")
 
@@ -22,6 +24,10 @@ app.add_middleware(
 
 init_db()
 start_scheduler()
+
+def generate_unsubscribe_token() -> str:
+    return secrets.token_hex(32)
+
 
 class HoroscopeRequest(BaseModel):
     name: str
@@ -72,7 +78,8 @@ class HoroscopeRequestNoEmail(BaseModel):
         
         return day
     
-    
+
+
 @app.get("/")
 def root():
     return {"message": "API is working! Scheduler active."}
@@ -81,10 +88,8 @@ def root():
 def get_horoscope(request: HoroscopeRequestNoEmail):
     try:
         zodiac_sign = get_zodiac_sign(request.birth_month, request.birth_day)
-        
         horoscope_html = generate_horoscope(zodiac_sign, request.name)
         return horoscope_html
-    
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -104,8 +109,12 @@ def send_horoscope_endpoint(request: HoroscopeRequest, db: Session = Depends(get
             existing_user.birth_day = request.birth_day
             existing_user.zodiac_sign = zodiac_sign
             existing_user.last_horoscope_sent = datetime.now()
+            if not existing_user.unsubscribe_token:
+                existing_user.unsubscribe_token = generate_unsubscribe_token()
+            existing_user.is_subscribed = 1
+            existing_user.unsubscribed_at = None
             db.commit()
-            user_id = existing_user.id
+            user = existing_user
         else:
             new_user = User(
                 name=request.name,
@@ -113,21 +122,23 @@ def send_horoscope_endpoint(request: HoroscopeRequest, db: Session = Depends(get
                 birth_month=request.birth_month,
                 birth_day=request.birth_day,
                 zodiac_sign=zodiac_sign,
-                last_horoscope_sent=datetime.now()
+                last_horoscope_sent=datetime.now(),
+                unsubscribe_token=generate_unsubscribe_token(),
+                is_subscribed=1
             )
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            user_id = new_user.id
+            user = new_user
         
         horoscope_html = generate_horoscope(zodiac_sign, request.name)
-        send_email(request.email, zodiac_sign, horoscope_html)
+        send_email(request.email, zodiac_sign, horoscope_html, user.unsubscribe_token)
         
         return {
             "success": True,
             "zodiac_sign": zodiac_sign,
             "message": f"Horoscope sent to {request.name} ({zodiac_sign}) at {request.email}!",
-            "user_id": user_id
+            "user_id": user.id
         }
     
     except ValueError as e:
@@ -150,8 +161,14 @@ def send_horoscope_by_email(request: SendHoroscopeByEmailRequest, db: Session = 
                 detail=f"User with email {request.email} not found. Please register first using /api/send-horoscope"
             )
         
+        if not user.is_subscribed:
+            raise HTTPException(
+                status_code=403,
+                detail="Ez az email cím le van iratkozva a napi horoszkópról."
+            )
+        
         horoscope_html = generate_horoscope(user.zodiac_sign, user.name)
-        send_email(user.email, user.zodiac_sign, horoscope_html)
+        send_email(user.email, user.zodiac_sign, horoscope_html, user.unsubscribe_token)
         
         user.last_horoscope_sent = datetime.now()
         db.commit()
@@ -174,12 +191,12 @@ def send_horoscope_by_email(request: SendHoroscopeByEmailRequest, db: Session = 
 @app.post("/api/send-all-horoscopes")
 def send_all_horoscopes(db: Session = Depends(get_db)):
     try:
-        users = db.query(User).all()
+        users = db.query(User).filter(User.is_subscribed == 1).all()
         
         if not users:
             return {
                 "success": False,
-                "message": "No users in database"
+                "message": "No subscribed users in database"
             }
         
         results = {
@@ -191,8 +208,13 @@ def send_all_horoscopes(db: Session = Depends(get_db)):
         
         for user in users:
             try:
+                if not user.unsubscribe_token:
+                    user.unsubscribe_token = generate_unsubscribe_token()
+                    db.commit()
+                    db.refresh(user)
+
                 horoscope_html = generate_horoscope(user.zodiac_sign, user.name)
-                send_email(user.email, user.zodiac_sign, horoscope_html)
+                send_email(user.email, user.zodiac_sign, horoscope_html, user.unsubscribe_token)
                 
                 user.last_horoscope_sent = datetime.now()
                 db.commit()
@@ -207,6 +229,7 @@ def send_all_horoscopes(db: Session = Depends(get_db)):
                 time.sleep(1)
                 
             except Exception as e:
+                db.rollback()
                 results["failed"] += 1
                 results["details"].append({
                     "email": user.email,
@@ -269,10 +292,50 @@ def get_all_users(db: Session = Depends(get_db)):
                 "birth_month": user.birth_month,
                 "birth_day": user.birth_day,
                 "zodiac_sign": user.zodiac_sign,
-                "created_at": user.created_at,
-                "last_horoscope_sent": user.last_horoscope_sent
+                "subscribed_at": user.subscribed_at,
+                "last_horoscope_sent": user.last_horoscope_sent,
+                "unsubscribed_at": user.unsubscribed_at,
+                "is_subscribed": user.is_subscribed,
+                "unsubscribe_token": user.unsubscribe_token
             } for user in users
         ]
+    }
+
+@app.get("/api/unsubscribe")
+def api_unsubscribe_get(token: str, db: Session = Depends(get_db)):
+    return _api_unsubscribe_common(token, db)
+
+@app.post("/api/unsubscribe")
+def api_unsubscribe_post(token: str, db: Session = Depends(get_db)):
+    return _api_unsubscribe_common(token, db)
+
+def _api_unsubscribe_common(token: str, db: Session):
+    if not token:
+        raise HTTPException(status_code=400, detail="Hiányzó token")
+
+    user = db.query(User).filter(User.unsubscribe_token == token).first()
+
+    if not user:
+        return {
+            "success": False,
+            "message": "Érvénytelen vagy lejárt leiratkozási link."
+        }
+
+    if not user.is_subscribed:
+        return {
+            "success": True,
+            "already_unsubscribed": True,
+            "message": f"A(z) {user.email} cím már korábban leiratkozott."
+        }
+
+    user.is_subscribed = 0
+    user.unsubscribed_at = datetime.now().isoformat()
+    db.commit()
+
+    return {
+        "success": True,
+        "already_unsubscribed": False,
+        "message": f"A(z) {user.email} cím sikeresen leiratkozott a napi horoszkópról."
     }
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: horoscope-backend
     ports:
-      - "6200:6100"
+      - "6100:6100"
     volumes:
       - /volume2/docker/projektlabor/horoscope_db:/app/data
     environment:

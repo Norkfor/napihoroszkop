@@ -21,8 +21,12 @@ class User(Base):
     birth_month = Column(Integer, nullable=False)
     birth_day = Column(Integer, nullable=False)
     zodiac_sign = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    subscribed_at = Column(DateTime, default=datetime.utcnow)
+    unsubscribed_at = Column(String, nullable=True)
+    is_subscribed = Column(Integer, default=1)
+    unsubscribe_token = Column(String, unique=True, nullable=False)
     last_horoscope_sent = Column(DateTime, nullable=True)
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)

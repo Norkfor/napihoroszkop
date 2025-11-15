@@ -55,7 +55,7 @@ const HoroscopeGenerator = () => {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const res = await fetch("http://localhost:6100/api/get-horoscope", {
+      const res = await fetch("/api/get-horoscope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,15 +68,17 @@ const HoroscopeGenerator = () => {
 
       if (!mountedRef.current) return;
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setQuote(data.message || "Horoszkópod itt jelenik meg!");
+      if (!res.ok) {
+        const errorText = await res.text();
+        setQuote(errorText || "Hiba történt az API híváskor.");
         setShowQuote(true);
-      } else {
-        setQuote(data.detail || "Hiba történt az API híváskor.");
-        setShowQuote(true);
+        return;
       }
+
+      const html = await res.text();
+
+      setQuote(html);
+      setShowQuote(true);
     } catch (error) {
       if (error.name === "AbortError") return;
       console.error(error);
@@ -157,11 +159,10 @@ const HoroscopeGenerator = () => {
         </button>
 
         {showQuote && (
-          <div className="horoscope-quote">
-            <span role="status" aria-live="polite">
-              {quote}
-            </span>
-          </div>
+          <div
+            className="horoscope-quote"
+            dangerouslySetInnerHTML={{ __html: quote }}
+          />
         )}
       </section>
 

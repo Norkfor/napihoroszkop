@@ -27,7 +27,7 @@ const EmailForm = ({ name = "", month = "", day = "" }) => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:6100/api/send-horoscope", {
+      const res = await fetch("/api/send-horoscope", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
