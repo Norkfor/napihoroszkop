@@ -4,7 +4,7 @@ import EmailForm from "./EmailForm";
 
 const HoroscopeGenerator = () => {
   const [name, setName] = useState("");
-  const [month, setMonth] = useState(""); // kept as '' or number
+  const [month, setMonth] = useState("");
   const [day, setDay] = useState("");
   const [errors, setErrors] = useState({});
   const [quote, setQuote] = useState("");
@@ -29,7 +29,6 @@ const HoroscopeGenerator = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Abort and mounted guard
   const abortRef = useRef(null);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -44,12 +43,14 @@ const HoroscopeGenerator = () => {
     if (!validate()) {
       setShowQuote(false);
       setQuote("");
+      setShowEmail(false);
       return;
     }
 
     setLoading(true);
     setQuote("");
     setShowQuote(false);
+    setShowEmail(false);
 
     try {
       const controller = new AbortController();
@@ -72,6 +73,7 @@ const HoroscopeGenerator = () => {
         const errorText = await res.text();
         setQuote(errorText || "Hiba történt az API híváskor.");
         setShowQuote(true);
+        setShowEmail(false);
         return;
       }
 
@@ -79,12 +81,14 @@ const HoroscopeGenerator = () => {
 
       setQuote(html);
       setShowQuote(true);
+      setShowEmail(true);
     } catch (error) {
       if (error.name === "AbortError") return;
       console.error(error);
       if (!mountedRef.current) return;
       setQuote("Hálózati hiba, próbáld újra.");
       setShowQuote(true);
+      setShowEmail(false);
     } finally {
       if (mountedRef.current) setLoading(false);
       abortRef.current = null;
@@ -148,10 +152,7 @@ const HoroscopeGenerator = () => {
 
         <button
           className="horoscope-button"
-          onClick={() => {
-            setShowEmail(true);
-            handleGenerate();
-          }}
+          onClick={handleGenerate}
           disabled={loading}
           aria-busy={loading}
         >

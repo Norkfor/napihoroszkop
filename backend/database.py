@@ -28,6 +28,7 @@ class User(Base):
     last_horoscope_sent = Column(DateTime, nullable=True)
 
 
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
