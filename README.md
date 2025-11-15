@@ -9,7 +9,7 @@ docker-compose up -d --build
 ```
 
 Access:
-- Frontend: `http://localhost:2000`
+- Frontend: `http://localhost:8080`
 - Backend: `http://localhost:6100`
 
 ## Local Development
@@ -49,7 +49,7 @@ SMTP_PASSWORD=your-app-password
 
 ## Technology
 
-- **Backend**: FastAPI, SQLAlchemy, SQLite
+- **Backend**: FastAPI, SQLAlchemy, SQLite, Python
 - **Frontend**: React, Vite
 - **Scheduler**: APScheduler (daily at 8 AM)
 - **Containerization**: Docker & Docker Compose
