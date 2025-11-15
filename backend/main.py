@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, ValidationInfo
 from sqlalchemy.orm import Session
 from datetime import datetime
 from horoscope_generator import generate_horoscope
@@ -20,19 +20,38 @@ app.add_middleware(
 )
 
 init_db()
-
 start_scheduler()
-
 
 class HoroscopeRequest(BaseModel):
     name: str
     email: EmailStr
     birth_month: int = Field(..., ge=1, le=12, description="Birth month (1-12)")
     birth_day: int = Field(..., ge=1, le=31, description="Birth day (1-31)")
-
+    
+    @field_validator('birth_day')
+    @classmethod
+    def validate_day_in_month(cls, day: int, info: ValidationInfo) -> int:
+        """Validate that the day is valid for the given month"""
+        if 'birth_month' not in info.data:
+            return day
+        
+        birth_month = info.data['birth_month']
+        
+        days_in_month = {
+            1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30,
+            7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
+        }
+        
+        if day > days_in_month.get(birth_month, 31):
+            raise ValueError(f'Day {day} is invalid for month {birth_month}')
+        
+        return day
+    
+    
 @app.get("/")
 def root():
     return {"message": "API is working! Scheduler active."}
+
 
 @app.post("/api/send-horoscope")
 def send_horoscope_endpoint(request: HoroscopeRequest, db: Session = Depends(get_db)):
@@ -72,11 +91,48 @@ def send_horoscope_endpoint(request: HoroscopeRequest, db: Session = Depends(get
             "message": f"Horoscope sent to {request.name} ({zodiac_sign}) at {request.email}!",
             "user_id": user_id
         }
+    
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid birth date")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+class SendHoroscopeByEmailRequest(BaseModel):
+    email: EmailStr
+
+@app.post("/api/send-horoscope-by-email")
+def send_horoscope_by_email(request: SendHoroscopeByEmailRequest, db: Session = Depends(get_db)):
+    """Send horoscope to an existing user by email"""
+    try:
+        user = db.query(User).filter(User.email == request.email).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"User with email {request.email} not found. Please register first using /api/send-horoscope"
+            )
+        
+        horoscope_html = generate_horoscope(user.zodiac_sign, user.name)
+        send_email(user.email, user.zodiac_sign, horoscope_html)
+        
+        user.last_horoscope_sent = datetime.now()
+        db.commit()
+        
+        return {
+            "success": True,
+            "zodiac_sign": user.zodiac_sign,
+            "message": f"Horoscope sent to {user.name} ({user.zodiac_sign}) at {user.email}!",
+            "user_id": user.id,
+            "sent_at": user.last_horoscope_sent.isoformat()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error sending horoscope: {str(e)}")
+
 
 @app.post("/api/send-all-horoscopes")
 def send_all_horoscopes(db: Session = Depends(get_db)):
@@ -127,15 +183,47 @@ def send_all_horoscopes(db: Session = Depends(get_db)):
             "message": f"Sent {results['sent']} horoscopes, {results['failed']} failed",
             "results": results
         }
-        
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.delete("/api/user/{email}")
+def delete_user_by_email(email: str, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"User with email {email} not found"
+            )
+        
+        db.delete(user)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"User {user.name} ({email}) successfully deleted",
+            "deleted_user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "zodiac_sign": user.zodiac_sign
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
+
 
 @app.get("/api/users")
 def get_all_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return {
-        "total": len(users), 
+        "total": len(users),
         "users": [
             {
                 "id": user.id,
@@ -149,7 +237,6 @@ def get_all_users(db: Session = Depends(get_db)):
             } for user in users
         ]
     }
-
 
 if __name__ == "__main__":
     import uvicorn
