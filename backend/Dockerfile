@@ -1,15 +1,22 @@
 FROM python:3.12-slim-bookworm
 
+# System deps
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
-        libpq-dev \
-        gosu && \
+        libpq-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-ENV TZ=Europe/Budapest
+ENV TZ=Europe/Budapest \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Create non-root user
+RUN groupadd -g 1001 app && \
+    useradd -u 1001 -g app -s /usr/sbin/nologin -d /app appuser
 
 WORKDIR /app
 
@@ -20,10 +27,15 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-RUN mkdir -p /app/data && chmod 777 /app/data
+# Restrict permissions on application and data dir
+RUN mkdir -p /app/data && \
+    chown -R appuser:app /app && \
+    chmod 700 /app/data
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown appuser:app /entrypoint.sh
+
+USER appuser
 
 EXPOSE 6100
 

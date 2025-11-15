@@ -1,17 +1,19 @@
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
+
 def send_email(to_email, zodiac_sign, horoscope_html, unsubscribe_token=None):
-    smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-    smtp_port_str = os.getenv('SMTP_PORT', '587')
-    smtp_user = os.getenv('SMTP_USER')
-    smtp_password = os.getenv('SMTP_PASSWORD')
-    public_base_url = os.getenv('PUBLIC_BASE_URL', '').strip()
-    frontend_base_url = os.getenv('FRONTEND_BASE_URL', '').strip()
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port_str = os.getenv("SMTP_PORT", "587")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    public_base_url = os.getenv("PUBLIC_BASE_URL", "").strip()
+    frontend_base_url = os.getenv("FRONTEND_BASE_URL", "").strip()
 
     try:
         if smtp_port_str:
@@ -30,11 +32,11 @@ def send_email(to_email, zodiac_sign, horoscope_html, unsubscribe_token=None):
     frontend_unsubscribe_url = None
 
     if unsubscribe_token and public_base_url:
-        base = public_base_url.rstrip('/')
+        base = public_base_url.rstrip("/")
         unsubscribe_url = f"{base}/api/unsubscribe?token={unsubscribe_token}"
 
     if unsubscribe_token and frontend_base_url:
-        fbase = frontend_base_url.rstrip('/')
+        fbase = frontend_base_url.rstrip("/")
         frontend_unsubscribe_url = f"{fbase}/app?unsubscribeToken={unsubscribe_token}"
 
         footer_html = f"""
@@ -56,16 +58,17 @@ def send_email(to_email, zodiac_sign, horoscope_html, unsubscribe_token=None):
         else:
             horoscope_html = horoscope_html + footer_html
 
-    msg = MIMEText(horoscope_html, 'html', 'utf-8')
-    msg['From'] = smtp_user
-    msg['To'] = to_email
-    msg['Subject'] = f'Napi horoszkópod - {zodiac_sign}'
+    msg = MIMEText(horoscope_html, "html", "utf-8")
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+    msg["Subject"] = f"Napi horoszkópod - {zodiac_sign}"
 
     if unsubscribe_url:
-        msg['List-Unsubscribe'] = f"<{unsubscribe_url}>"
-        msg['List-Unsubscribe-Post'] = "List-Unsubscribe=One-Click"
+        msg["List-Unsubscribe"] = f"<{unsubscribe_url}>"
+        msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
+    context = ssl.create_default_context()
     with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.starttls()
+        server.starttls(context=context)
         server.login(smtp_user, smtp_password)
         server.send_message(msg)

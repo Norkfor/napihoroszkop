@@ -1,5 +1,6 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import "./HoroscopeGenerator.css";
 import EmailForm from "./EmailForm";
 
@@ -78,9 +79,10 @@ const HoroscopeGenerator = () => {
         return;
       }
 
-      const html = await res.text();
+      const rawHtml = await res.text();
+      const sanitizedHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
 
-      setQuote(html);
+      setQuote(sanitizedHtml);
       setShowQuote(true);
       setShowEmail(true);
     } catch (error) {
