@@ -1,5 +1,4 @@
-import React from "react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import "./HoroscopeGenerator.css";
 import EmailForm from "./EmailForm";
@@ -16,7 +15,9 @@ const HoroscopeGenerator = () => {
 
   const validate = () => {
     const newErrors = {};
+
     if (!name.trim()) newErrors.name = "Adj meg egy nevet!";
+
     const m = Number(month);
     if (!month && month !== 0) newErrors.month = "Add meg a hónapot!";
     else if (Number.isNaN(m) || m < 1 || m > 12)
@@ -31,8 +32,10 @@ const HoroscopeGenerator = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Abort és unmount védelem
   const abortRef = useRef(null);
   const mountedRef = useRef(true);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -80,10 +83,17 @@ const HoroscopeGenerator = () => {
       }
 
       const rawHtml = await res.text();
-      const sanitizedHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
+
+      // XSS védelem – csak DOMPurify által tisztított HTML mehet ki
+      const sanitizedHtml = DOMPurify.sanitize(rawHtml, {
+        USE_PROFILES: { html: true },
+      });
+
+      if (!mountedRef.current) return;
 
       setQuote(sanitizedHtml);
       setShowQuote(true);
+      // CSAK SIKERES 200 UTÁN jelenjen meg a feliratkozó blokk
       setShowEmail(true);
     } catch (error) {
       if (error.name === "AbortError") return;
@@ -146,7 +156,9 @@ const HoroscopeGenerator = () => {
                 max="31"
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
-                className={`horoscope-input ${errors.day ? "input-error" : ""}`}
+                className={`horoscope-input ${
+                  errors.day ? "input-error" : ""
+                }`}
                 placeholder="NN"
               />
             </div>

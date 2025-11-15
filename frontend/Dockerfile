@@ -1,4 +1,4 @@
-FROM node:22-alpine3.20 AS build
+FROM node:alpine AS build
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN npm run build && \
     rm -rf node_modules && \
     npm ci --production
 
-FROM nginx:1.27-alpine
+FROM nginx:alpine
 
 RUN apk add --no-cache ca-certificates tzdata
 
